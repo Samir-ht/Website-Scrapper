@@ -114,18 +114,55 @@ class VectorReadyScraper:
         if not os.path.exists(self.output_base):
             os.makedirs(self.output_base)
 
+    # def format_content(self, soup):
+    #     """
+    #     Organizes text by finding headers and the specific
+    #     paragraphs that follow them.
+    #     """
+    #     formatted_output = []
+    #
+    #     # 1. Focus only on the main content area to avoid nav/footer noise
+    #     container = soup.find('main') or soup.find('article') or soup.body
+    #
+    #     # 2. Find all relevant structural tags in the order they appear
+    #     # This is the secret to the "Header > Content" format
+    #     elements = container.find_all(['h1', 'h2', 'h3', 'h4', 'p', 'li'])
+    #
+    #     for el in elements:
+    #         text = el.get_text(strip=True)
+    #         if not text:
+    #             continue
+    #
+    #         if el.name in ['h1', 'h2', 'h3', 'h4']:
+    #             # Label headers clearly
+    #             formatted_output.append(f"\n[HEADER: {text.upper()}]")
+    #         elif el.name == 'li':
+    #             # Format list items with a bullet
+    #             formatted_output.append(f"  • {text}")
+    #         else:
+    #             # Regular paragraph content
+    #             formatted_output.append(text)
+    #
+    #     return "\n".join(formatted_output)
     def format_content(self, soup):
         """
         Organizes text by finding headers and the specific
-        paragraphs that follow them.
+        paragraphs that follow them, excluding header/footer.
         """
         formatted_output = []
 
-        # 1. Focus only on the main content area to avoid nav/footer noise
+        # 1. Focus only on the main content area
         container = soup.find('main') or soup.find('article') or soup.body
+        if not container:
+            return ""
 
-        # 2. Find all relevant structural tags in the order they appear
-        # This is the secret to the "Header > Content" format
+        # 2. REMOVE unwanted layout elements
+        for tag in container.find_all(
+                ['header', 'footer', 'nav', 'aside', 'form', 'script', 'style']
+        ):
+            tag.decompose()
+
+        # 3. Extract content in visual order
         elements = container.find_all(['h1', 'h2', 'h3', 'h4', 'p', 'li'])
 
         for el in elements:
@@ -134,13 +171,10 @@ class VectorReadyScraper:
                 continue
 
             if el.name in ['h1', 'h2', 'h3', 'h4']:
-                # Label headers clearly
                 formatted_output.append(f"\n[HEADER: {text.upper()}]")
             elif el.name == 'li':
-                # Format list items with a bullet
                 formatted_output.append(f"  • {text}")
             else:
-                # Regular paragraph content
                 formatted_output.append(text)
 
         return "\n".join(formatted_output)
